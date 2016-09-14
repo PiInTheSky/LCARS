@@ -1,0 +1,15 @@
+#!/bin/bash
+pidof  dl-fldigi > /dev/null
+if [[ $? -ne 0 ]] ; then
+	echo "Restarting dl-fldigi"
+	
+	cd /home/pi/dl-fldigi/src
+	./dl-fldigi --hab &
+	sleep 3
+fi
+#
+# Set window size
+wmctrl -r "dl-fldigi - dl-fldigi for High Altitude Balloon Tracking" -e 0,100,54,695,388
+#
+# Set focus
+wmctrl -F -a "dl-fldigi - dl-fldigi for High Altitude Balloon Tracking"

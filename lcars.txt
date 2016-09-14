@@ -1,0 +1,13 @@
+[Network]
+gpsserver = localhost
+gatewayserver = localhost
+
+[Chase]
+id = BLACKOPS_chase
+enabled = 0
+
+[SSDV]
+path = /home/pi/lora-gateway/ssdv
+
+[gateway]
+

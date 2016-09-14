@@ -1,0 +1,15 @@
+#!/bin/bash
+pidof  gateway >/dev/null
+if [[ $? -ne 0 ]] ; then
+	echo "Restarting Gateway"
+	cd ~/lora-gateway
+	# sudo xterm -fa 'Monospace' -fs 11 ./gateway &
+	sudo xterm ./gateway &
+	sleep 1
+fi
+#
+# Set window size
+wmctrl -r xterm -e 0,100,32,695,388
+#
+# Set focus
+wmctrl -F -a xterm

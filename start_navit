@@ -1,0 +1,19 @@
+#!/bin/bash
+pidof  navit >/dev/null
+if [[ $? -ne 0 ]] ; then
+	echo "Restarting Navit"
+	cd ~/navit-build/navit
+	./navit &
+	sleep 1
+fi
+#
+# Set window size
+wmctrl -r Navit -e 0,100,66,695,388
+#
+# Set focus
+wmctrl -F -a Navit
+#
+# Set target position
+if [ -n "$1" ] && [ -n "$2" ]; then
+	dbus-send  --print-reply --session --dest=org.navit_project.navit /org/navit_project/navit/default_navit org.navit_project.navit.navit.set_destination string:"geo: $1 $2 " string:"comment: HAB"
+fi

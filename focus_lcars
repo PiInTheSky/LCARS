@@ -1,0 +1,4 @@
+#!/bin/bash
+echo hello >> /home/pi/lcars/dave.log
+wmctrl -F -a lcars.py
+

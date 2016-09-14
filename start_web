@@ -1,0 +1,5 @@
+sudo killall kweb3
+kweb3 -JEMVKN $1 &
+sleep 2
+wmctrl -r "kweb3" -e 0,100,28,695,388
+wmctrl -R "kweb3"
