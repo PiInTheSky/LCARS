@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+#!/usr/bin/env python
 
 import sys
 from PyQt4 import QtGui, QtCore, uic
@@ -23,8 +24,26 @@ import urllib.request
 import os, glob
 import subprocess
 
+Modes=[{'implicit': 0, 'coding': 8, 'bandwidth': 20.8, 'spreading': 11, 'lowopt': 1},
+       {'implicit': 1, 'coding': 5, 'bandwidth': 20.8, 'spreading':  6, 'lowopt': 0},
+       {'implicit': 0, 'coding': 8, 'bandwidth': 62.5, 'spreading':  8, 'lowopt': 0},
+       {'implicit': 0, 'coding': 6, 'bandwidth':  250, 'spreading':  7, 'lowopt': 0},
+       {'implicit': 1, 'coding': 5, 'bandwidth':  250, 'spreading':  6, 'lowopt': 0},
+       {'implicit': 0, 'coding': 8, 'bandwidth': 41.7, 'spreading': 11, 'lowopt': 0},
+       {'implicit': 1, 'coding': 5, 'bandwidth': 41.7, 'spreading':  6, 'lowopt': 0}]
+
+	# {EXPLICIT_MODE, ERROR_CODING_4_8, BANDWIDTH_20K8, SPREADING_11, 1,    60, "Telemetry"},			// 0: Normal mode for telemetry
+	# {IMPLICIT_MODE, ERROR_CODING_4_5, BANDWIDTH_20K8, SPREADING_6,  0,  1400, "SSDV"},				// 1: Normal mode for SSDV
+	# {EXPLICIT_MODE, ERROR_CODING_4_8, BANDWIDTH_62K5, SPREADING_8,  0,  2000, "Repeater"},			// 2: Normal mode for repeater network	
+	# {EXPLICIT_MODE, ERROR_CODING_4_6, BANDWIDTH_250K, SPREADING_7,  0,  8000, "Turbo"},				// 3: Normal mode for high speed images in 868MHz band
+	# {IMPLICIT_MODE, ERROR_CODING_4_5, BANDWIDTH_250K, SPREADING_6,  0, 16828, "TurboX"},			// 4: Fastest mode within IR2030 in 868MHz band
+	# {EXPLICIT_MODE, ERROR_CODING_4_8, BANDWIDTH_41K7, SPREADING_11, 0,   200, "Calling"},			// 5: Calling mode
+	# {IMPLICIT_MODE, ERROR_CODING_4_5, BANDWIDTH_41K7, SPREADING_6,  0,  2800, "Uplink"}				// 6: Uplink mode for 868
+
 SettingsList=[
+	# LCARS settings
 	{
+		'section':	'LCARS',
 		'setting':	'Chase.ID',
 		'type':		'text',
 		'prompt':	'Chase Car ID',
@@ -59,11 +78,199 @@ SettingsList=[
 		'text':		'Network location of LoRa gateway.  Expects to see a JSON feed as produced by the UKHAS LoRa gateway',
 		'save':		1
 	},
+	# Gateway generic settings
 	{
+		'section':	'LoRa',
 		'setting':	'gateway.tracker',
 		'type':		'text',
 		'prompt':	'LoRa Receiver Callsign',
 		'text':		'Name of tracker used by LoRa gateway.  This is what will appear on the map in the list of receivers',
+		'save':		0
+	},
+	{
+		'setting':	'gateway.EnableHabitat',
+		'type':		'check',
+		'prompt':	'LoRa Habitat Upload',
+		'text':		'Enables upload of telemetry from LoRa trackers to Habitat, so the flight appears on the web map',
+		'save':		0
+	},
+	{
+		'setting':	'gateway.EnableSSDV',
+		'type':		'check',
+		'prompt':	'LoRa SSDV Upload',
+		'text':		'Enables upload of SSDV from LoRa trackers to the SSDV server, so that images from the flight appear on the SSDV page',
+		'save':		0
+	},
+	{
+		'setting':	'gateway.LogTelemetry',
+		'type':		'check',
+		'prompt':	'LoRa Telemetry Log',
+		'text':		'Enables logging of the content of telemetry packets to telemetry.txt in the gateway folder.',
+		'save':		0
+	},
+	{
+		'setting':	'gateway.LogPackets',
+		'type':		'check',
+		'prompt':	'LoRa Packet Log',
+		'text':		'Enables logging of all packets to packets.txt in the gateway folder.',
+		'save':		0
+	},
+	{
+		'setting':	'gateway.CallingTimeout',
+		'type':		'integer',
+		'prompt':	'LoRa Calling Timeout',
+		'text':		'After this period of inactivity, the gateway will retune to the configured frequency and mode',
+		'units':	's',
+		'save':		0
+	},
+	{
+		'setting':	'gateway.JPGFolder',
+		'type':		'text',
+		'prompt':	'LoRa JPG Folder',
+		'text':		'Incoming LoRa SSDV images will be stored in this folder',
+		'save':		0
+	},
+	# Gateway channel 0 settings
+	{
+		'section':	'LoRa 0',
+		'setting':	'gateway.frequency_0',
+		'type':		'float',
+		'prompt':	'LoRa Ch0 Frequency',
+		'text':		'Frequency for LoRa channel 0',
+		'units':	'MHz',
+		'save':		0
+	},
+	{
+		'setting':	'gateway.mode_0',
+		'type':		'list',
+		'prompt':	'LoRa Ch0 Mode',
+		'text':		'Preset Mode for LoRa channel 0',
+		'values':	'',
+		'offset':	0,
+		'display':	['Slow','SSDV','Repeater','Turbo','TurboX','Calling'],
+		'function':	'loramode',
+		'save':		0
+	},
+	{
+		'setting':	'gateway.sf_0',
+		'type':		'list',
+		'prompt':	'LoRa Ch0 Spreading',
+		'text':		'Spreading Factor for LoRa channel 0',
+		'values':	'',
+		'offset':	6,
+		'display':	['6', '7', '8', '9', '10', '11', '12'],
+		'save':		0
+	},
+	{
+		'setting':	'gateway.bandwidth_0',
+		'type':		'list',
+		'prompt':	'LoRa Ch0 Bandwidth',
+		'text':		'Bandwidth in kHz for LoRa channel 0',
+		'values':	'',
+		'offset':	-1,
+		'display':	['7.8', '10.4', '15.6k', '20.8', '31.25', '41.7', '62.5', '125', '250', '500'],
+		'save':		0
+	},
+	{
+		'setting':	'gateway.implicit_0',
+		'type':		'check',
+		'prompt':	'LoRa Ch0 Implicit',
+		'text':		'Implicit Mode for LoRa channel 0; uncheck to use Explicit Mode',
+		'save':		0
+	},
+	{
+		'setting':	'gateway.coding_0',
+		'type':		'list',
+		'prompt':	'LoRa Ch0 Coding',
+		'text':		'Error Coding for LoRa channel 0',
+		'values':	'',
+		'offset':	5,
+		'display':	['5', '6', '7', '8'],
+		'save':		0
+	},
+	{
+		'setting':	'gateway.lowopt_0',
+		'type':		'check',
+		'prompt':	'LoRa Ch0 LDRO',
+		'text':		'Low Data Rate Optimisation for LoRa channel 0',
+		'save':		0
+	},
+	{
+		'setting':	'gateway.AFC_0',
+		'type':		'check',
+		'prompt':	'LoRa Ch0 AFC',
+		'text':		'Automatic Frequency Control for LoRa channel 0',
+		'save':		0
+	},
+	# Gateway channel 1 settings
+	{
+		'section':	'LoRa 0',
+		'setting':	'gateway.frequency_1',
+		'type':		'float',
+		'prompt':	'LoRa Ch1 Frequency',
+		'text':		'Frequency for LoRa channel 1',
+		'units':	'MHz',
+		'save':		0
+	},
+	{
+		'setting':	'gateway.mode_1',
+		'type':		'list',
+		'prompt':	'LoRa Ch1 Mode',
+		'text':		'Preset Mode for LoRa channel 1',
+		'values':	'',
+		'offset':	0,
+		'display':	['Slow','SSDV','Repeater','Turbo','TurboX','Calling'],
+		'save':		0
+	},
+	{
+		'setting':	'gateway.sf_1',
+		'type':		'list',
+		'prompt':	'LoRa Ch1 Spreading',
+		'text':		'Spreading Factor for LoRa channel 1',
+		'values':	'',
+		'offset':	6,
+		'display':	['6', '7', '8', '9', '10', '11', '12'],
+		'save':		0
+	},
+	{
+		'setting':	'gateway.bandwidth_1',
+		'type':		'list',
+		'prompt':	'LoRa Ch1 Bandwidth',
+		'text':		'Bandwidth in kHz for LoRa channel 1',
+		'values':	'',
+		'offset':	-1,
+		'display':	['7.8', '10.4', '15.6k', '20.8', '31.25', '41.7', '62.5', '125', '250', '500'],
+		'save':		0
+	},
+	{
+		'setting':	'gateway.implicit_1',
+		'type':		'check',
+		'prompt':	'LoRa Ch1 Implicit',
+		'text':		'Implicit Mode for LoRa channel 0; uncheck to use Explicit Mode',
+		'save':		0
+	},
+	{
+		'setting':	'gateway.coding_1',
+		'type':		'list',
+		'prompt':	'LoRa Ch1 Coding',
+		'text':		'Error Coding for LoRa channel 1',
+		'values':	'',
+		'offset':	5,
+		'display':	['5', '6', '7', '8'],
+		'save':		0
+	},
+	{
+		'setting':	'gateway.lowopt_1',
+		'type':		'check',
+		'prompt':	'LoRa Ch0 LDR1',
+		'text':		'Low Data Rate Optimisation for LoRa channel 1',
+		'save':		0
+	},
+	{
+		'setting':	'gateway.AFC_1',
+		'type':		'check',
+		'prompt':	'LoRa Ch1 AFC',
+		'text':		'Automatic Frequency Control for LoRa channel 1',
 		'save':		0
 	}
 ]
@@ -101,6 +308,7 @@ global Settings
 global EditSettings
 global HABBalloonMode
 global LoRaSocket
+global SettingsPage, SettingsRows
 
 def BoolToStr(value):
 	if value:
@@ -169,14 +377,14 @@ class Main(QtGui.QMainWindow):
 				Section = words[0]
 				Field = words[1]
 				if item['save']:
-					if item['type'] == 'text':
+					if item['type'] in ['text', 'integer', 'float']:
 						Settings[Setting] = config.get(Section, Field)
 					elif item['type'] == 'check':
 						Settings[Setting] = config.getboolean(Section, Field)			
 				else:
-					if item['type'] == 'text':
-						Settings[Setting] = '????'
-					elif item['type'] == 'check':
+					if item['type'] in ['text']:
+						Settings[Setting] = ''
+					elif item['type'] in ['check', 'integer', 'float', 'list']:
 						Settings[Setting] = 0
 			item['changed'] = 0
 
@@ -196,20 +404,8 @@ class Main(QtGui.QMainWindow):
 		config = configparser.RawConfigParser()   
 		config.read(filename)
 
-		# Chase section
-		# if not config.has_section('Chase'):
-			# config.add_section('Chase')
-		# config.set('Chase', 'ID', Settings['Chase.ID'])
-		# config.set('Chase', 'Enabled', BoolToStr(Settings['Chase.Enabled']))
-		
-		# SSDV section
-		# if not config.has_section('SSDV'):
-			# config.add_section('SSDV')
-		# config.set('SSDV', 'Path', Settings['SSDV.Path'])	
-
 		MessageForGateway = ''
 		for index, item in enumerate(SettingsList):
-		
 			if item['changed']:
 				Setting = item['setting']
 				words = Setting.split('.')
@@ -219,18 +415,23 @@ class Main(QtGui.QMainWindow):
 						config.add_section(Section)
 					Field = words[1]
 					if item['save']:
-						if item['type'] == 'text':
+						if item['type'] in ['text', 'integer', 'float', 'list']:
 							config.set(Section, Field, Settings[Setting])
 						elif item['type'] == 'check':
 							config.set(Section, Field, BoolToStr(Settings[Setting]))
 					else:
 						SaveRemote = 1
-						print("SaveRemote = 1\n")
 						try:
 							if item['type'] == 'text':
 								MessageForGateway = MessageForGateway + Field + '=' + Settings[Setting] + '\r\n'
+							elif item['type'] == 'integer':
+								MessageForGateway = MessageForGateway + Field + '=' + str(Settings[Setting]) + '\r\n'
+							elif item['type'] == 'float':
+								MessageForGateway = MessageForGateway + Field + '=' + str(Settings[Setting]) + '\r\n'
 							elif item['type'] == 'check':
 								MessageForGateway = MessageForGateway + Field + '=' + BoolToStr(Settings[Setting]) + '\r\n'
+							elif item['type'] == 'list':
+								MessageForGateway = MessageForGateway + Field + '=' + str(Settings[Setting]) + '\r\n'								
 						except:
 							pass
 				item['changed'] = 0
@@ -309,43 +510,131 @@ class Main(QtGui.QMainWindow):
 
 	# Settings page signals]
 	def handleSettingItemSelect(self):
-		global EditSettings
+		global EditSettings, SettingsPage, SettingsRows
 		
 		# User has changed selection
 		sender = self.sender()
-		Row = sender.currentRow()
+		Row = sender.currentRow() + SettingsRows[SettingsPage]
 		screen = self.screens[7]
 		
+		# Disconnect previous handler
+		# screen.findChild(QLineEdit, 'edtSetting').textChanged.disconnect()
+		# screen.findChild(QSpinBox,  'spnSetting').valueChanged.disconnect()
+		# screen.findChild(QDoubleSpinBox, 'spnDoubleSetting').disconnect()
+		# screen.findChild(QCheckBox, 'chkSetting').stateChanged.disconnect()
+		try:
+			screen.findChild(QComboBox, 'cmbSetting').currentIndexChanged.disconnect()
+		except Exception: pass	
+		
+
 		# Show explanation
 		screen.findChild(QLabel, 'lblText').setText(SettingsList[Row]['text'])
 		
 		# Display and populate correct widget type
 		screen.findChild(QLineEdit, 'edtSetting').hide()
 		screen.findChild(QCheckBox, 'chkSetting').hide()
+		screen.findChild(QSpinBox,  'spnSetting').hide()
+		screen.findChild(QDoubleSpinBox,  'spnDoubleSetting').hide()
+		screen.findChild(QComboBox,  'cmbSetting').hide()
 
+		if 'units' in SettingsList[Row]:
+			screen.findChild(QLabel,  'lblUnits').setText(SettingsList[Row]['units'])
+		else:
+			screen.findChild(QLabel,  'lblUnits').setText('')
+		
 		if SettingsList[Row]['type'] == 'text':
 			screen.findChild(QLineEdit, 'edtSetting').show()
 			screen.findChild(QLineEdit, 'edtSetting').setText(EditSettings[SettingsList[Row]['setting']])
 			screen.findChild(QLineEdit, 'edtSetting').textChanged.connect(self.handleSettingTextChanged)
+		elif SettingsList[Row]['type'] == 'integer':
+			screen.findChild(QSpinBox,  'spnSetting').show()
+			screen.findChild(QSpinBox,  'spnSetting').setValue(EditSettings[SettingsList[Row]['setting']])
+			screen.findChild(QSpinBox,  'spnSetting').valueChanged.connect(self.handleSettingSpinChanged)
+		elif SettingsList[Row]['type'] == 'float':
+			screen.findChild(QDoubleSpinBox, 'spnDoubleSetting').show()
+			screen.findChild(QDoubleSpinBox, 'spnDoubleSetting').setValue(EditSettings[SettingsList[Row]['setting']])
+			screen.findChild(QDoubleSpinBox, 'spnDoubleSetting').valueChanged.connect(self.handleSettingDoubleSpinChanged)
 		elif SettingsList[Row]['type'] == 'check':
 			screen.findChild(QCheckBox, 'chkSetting').show()
+			screen.findChild(QCheckBox, 'chkSetting').setText(SettingsList[Row]['prompt'])
 			screen.findChild(QCheckBox, 'chkSetting').setChecked(EditSettings[SettingsList[Row]['setting']])
 			screen.findChild(QCheckBox, 'chkSetting').stateChanged.connect(self.handleSettingCheckboxChanged)
+		else:
+			screen.findChild(QComboBox, 'cmbSetting').show()
+			# Populate list
+			screen.findChild(QComboBox, 'cmbSetting').clear()
+			screen.findChild(QComboBox, 'cmbSetting').addItems(SettingsList[Row]['display'])
+			if SettingsList[Row]['offset'] >= 0:
+				# We use the item index as the value
+				screen.findChild(QComboBox, 'cmbSetting').setCurrentIndex(EditSettings[SettingsList[Row]['setting']] - SettingsList[Row]['offset'])
+			else:
+				# We use the item itself as the value
+				index = screen.findChild(QComboBox, 'cmbSetting').findText(str(EditSettings[SettingsList[Row]['setting']]))
+				screen.findChild(QComboBox, 'cmbSetting').setCurrentIndex(index)
+			screen.findChild(QComboBox, 'cmbSetting').currentIndexChanged.connect(self.handleSettingComboChanged)		
 		
 	def handleSettingTextChanged(self):
+		global EditSettings, SettingsPage, SettingsRows
+		
 		# User is typing into an text box setting
 		screen = self.screens[7]
-		Row = screen.findChild(QListWidget, 'lstSettings').currentRow()
+		Row = screen.findChild(QListWidget, 'lstSettings').currentRow() + SettingsRows[SettingsPage]
 		EditSettings[SettingsList[Row]['setting']] = screen.findChild(QLineEdit, 'edtSetting').text()
 		SettingsList[Row]['changed'] = 1
 
+	def handleSettingSpinChanged(self):
+		global EditSettings, SettingsPage, SettingsRows
+		
+		# User is changing a spinbox value
+		screen = self.screens[7]
+		Row = screen.findChild(QListWidget, 'lstSettings').currentRow() + SettingsRows[SettingsPage]
+		EditSettings[SettingsList[Row]['setting']] = screen.findChild(QSpinBox, 'spnSetting').value()
+		SettingsList[Row]['changed'] = 1
+
+	def handleSettingDoubleSpinChanged(self):
+		global EditSettings, SettingsPage, SettingsRows
+
+		# User is changing a double spinbox value
+		screen = self.screens[7]
+		Row = screen.findChild(QListWidget, 'lstSettings').currentRow() + SettingsRows[SettingsPage]
+		EditSettings[SettingsList[Row]['setting']] = screen.findChild(QDoubleSpinBox, 'spnDoubleSetting').value()
+		SettingsList[Row]['changed'] = 1
 
 	def handleSettingCheckboxChanged(self):
+		global EditSettings, SettingsPage, SettingsRows
+
 		# User has changed check box value
 		screen = self.screens[7]
-		Row = screen.findChild(QListWidget, 'lstSettings').currentRow()
+		Row = screen.findChild(QListWidget, 'lstSettings').currentRow() + SettingsRows[SettingsPage]
 		EditSettings[SettingsList[Row]['setting']] = screen.findChild(QCheckBox, 'chkSetting').isChecked()
 		SettingsList[Row]['changed'] = 1
+		
+	def DoSpecialFunction(self, Row):
+		if 'function' in SettingsList[Row]:
+			if SettingsList[Row]['function'] == 'loramode':
+				Channel = SettingsList[Row]['setting'][-1:]		# channel is '0' or '1' from end of setting name
+				Mode = EditSettings[SettingsList[Row]['setting']]
+				EditSettings['gateway.implicit_' + Channel] = Modes[Mode]['implicit']
+				EditSettings['gateway.coding_' + Channel] = Modes[Mode]['coding']
+				EditSettings['gateway.bandwidth_' + Channel] = Modes[Mode]['bandwidth']
+				EditSettings['gateway.sf_' + Channel] = Modes[Mode]['spreading']
+				EditSettings['gateway.lowopt_' + Channel] = Modes[Mode]['lowopt']
+       
+	def handleSettingComboChanged(self):
+		global EditSettings, SettingsPage, SettingsRows
+
+		# User has changed combo box value
+		screen = self.screens[7]
+		if screen.findChild(QComboBox, 'cmbSetting').currentIndex() >= 0:
+			Row = screen.findChild(QListWidget, 'lstSettings').currentRow() + SettingsRows[SettingsPage]
+			if SettingsList[Row]['offset'] >= 0:
+				# We use the item index as the value
+				EditSettings[SettingsList[Row]['setting']] = screen.findChild(QComboBox, 'cmbSetting').currentIndex() + SettingsList[Row]['offset']
+			else:
+				# We use the item itself as the value
+				EditSettings[SettingsList[Row]['setting']] = screen.findChild(QComboBox, 'cmbSetting').currentText()
+			self.DoSpecialFunction(Row)
+			SettingsList[Row]['changed'] = 1
 		
 	def handleSaveSettingsClick(self, event):
 		global Settings, EditSettings
@@ -359,16 +648,29 @@ class Main(QtGui.QMainWindow):
 		self.SaveConfig()
 
 	def handleCancelSettingsClick(self, event):
-		global Settings, EditSettings
+		global Settings, EditSettings, CurrentScreen
 		
 		print("Settings CANCEL button pressed")
-		EditSettings = Settings.copy()
-		listView = screen.findChild(QListWidget, 'lstSettings')
-		listView.setCurrentRow(0)		
+		self.InitSettingsScreen()
+		# EditSettings = Settings.copy()
+		# listView = CurrentScreen.findChild(QListWidget, 'lstSettings')
+		# listView.setCurrentRow(0)		
 
 	def handleKeyboardClick(self, event):
 		os.system("killall matchbox-keyboard")		
 		os.system("matchbox-keyboard -d &")		
+
+	def handleLCARSSettingsClick(self, event):
+		self.ShowSettingsPage(0)
+
+	def handleLoRaSettingsClick(self, event):
+		self.ShowSettingsPage(1)
+
+	def handleLoRa0SettingsClick(self, event):
+		self.ShowSettingsPage(2)
+
+	def handleLoRa1SettingsClick(self, event):
+		self.ShowSettingsPage(3)
 
 	# Map/Nav page signals
 	def handleMapClick(self, event):
@@ -459,6 +761,10 @@ class Main(QtGui.QMainWindow):
 			CurrentScreen.findChild(QPushButton, 'btnSave').clicked.connect(self.handleSaveSettingsClick)
 			CurrentScreen.findChild(QPushButton, 'btnCancel').clicked.connect(self.handleCancelSettingsClick)
 			CurrentScreen.findChild(QPushButton, 'btnKeyboard').clicked.connect(self.handleKeyboardClick)
+			CurrentScreen.findChild(QPushButton, 'btnLCARS').clicked.connect(self.handleLCARSSettingsClick)
+			CurrentScreen.findChild(QPushButton, 'btnLoRa').clicked.connect(self.handleLoRaSettingsClick)
+			CurrentScreen.findChild(QPushButton, 'btnLoRa0').clicked.connect(self.handleLoRa0SettingsClick)
+			CurrentScreen.findChild(QPushButton, 'btnLoRa1').clicked.connect(self.handleLoRa1SettingsClick)
 
 		# Switch off camera viewing
 		if CameraMode == 1:
@@ -656,8 +962,24 @@ class Main(QtGui.QMainWindow):
 			SelectedSSDVFileName = FileName
 			SSDVModificationDate = ModificationDate
 	
+	def ShowSettingsPage(self, Page):
+		global SettingsPage, SettingsRows
+		
+		SettingsPage = Page
+		screen = self.screens[7]
+		
+		# Populate settings list
+		listView = screen.findChild(QListWidget, 'lstSettings')
+		listView.clear()
+		
+		for index in range(SettingsRows[Page], SettingsRows[Page+1]):
+			listView.addItem(SettingsList[index]['prompt'])
+		
+		listView.itemSelectionChanged.connect(self.handleSettingItemSelect)
+		listView.setCurrentRow(0)
+
 	def InitSettingsScreen(self):
-		global Settings, EditSettings, LoRaSocket
+		global Settings, EditSettings, LoRaSocket, SettingsPage, SettingsRows
 		
 		try:
 			LoRaSocket.send('SETTINGS\r\n'.encode('utf-8'))
@@ -665,19 +987,16 @@ class Main(QtGui.QMainWindow):
 			pass
 		
 		EditSettings = Settings.copy()
-		
-		screen = self.screens[7]
-		
-		# Populate settings list
-		listView = screen.findChild(QListWidget, 'lstSettings')
-		listView.clear()
-		
-		for index, item in enumerate(SettingsList):
-			listView.addItem(item['prompt'])
-		
-		listView.itemSelectionChanged.connect(self.handleSettingItemSelect)
-		listView.setCurrentRow(0)
 						
+		# Look for sections
+		SettingsRows = []
+		for index, item in enumerate(SettingsList):
+			if 'section' in item:
+				SettingsRows.append(index)
+		SettingsRows.append(len(SettingsList))
+		
+		# Show section
+		self.ShowSettingsPage(0)
 		
 	def UpdateHABChart(self, Always):
 		if HABStatii[SelectedPayloadIndex]['updatechart'] or Always:

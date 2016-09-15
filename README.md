@@ -114,12 +114,24 @@ Run with:
 Change History
 ==============
 
-14/09/2016 - V1.0
+15/09/2016 - V1.0.1
+-------------------
+
+	Split settings into 4 groups
+	Show units for MHz etc
+	Added general settings for LoRa config
+	Added channel settings for LoRa config
+	Handle integer and floating point LoRa settings
+	Handle list settings
+	Set specific LoRa values from preset modes
+	
+
+14/09/2016 - V1.0.0
 -------------------
 
 	Single huge source code file needs sorting out
 	No Habitat yet
-	Mapping only via Vanit - hoping to add Mapnik soon
+	Mapping only via Navit - hoping to add Mapnik soon
 	Installation instructions need finishing
 
 	
