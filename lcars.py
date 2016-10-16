@@ -281,9 +281,10 @@ ButtonColour = ['#FFFF33', '#98CCFF', '#FFFFCC', '#FFFF33', '#98CCFF', '#FFFFCC'
 TempHABStatus = {'updatechart': 0, 'updated': 0, 'lastupdate': 0, 'payload': '', 'time': '', 'lat': 0, 'lon': 0, 'alt': 0, 'rate': 0}
 TempSourceStatus = {'letter': '?', 'lastupdate': 0, 'connected':  0}
 
-# 3 channels
+# Payloads
+MAX_PAYLOADS=32
 HABStatii = []
-for i in range(0,3):
+for i in range(0,MAX_PAYLOADS):
 	HABStatii.append(TempHABStatus.copy())
 
 # Data sources - LoRa 1, LoRa 2, RTTY, Habitat
@@ -1195,7 +1196,6 @@ class Main(QtGui.QMainWindow):
 
 		self.BCLabel.setText(temp)
 
-		
 		# GPS
 		self.TimeLabel.setText("<font color='orange'>" + OurStatus['time'] + "</font>")
 		self.LatitudeLabel.setText("<font color='orange'>" + "%.5f" % OurStatus['lat'] + "</font>")
@@ -1303,8 +1303,10 @@ def ProcessdlfldigiLine(line):
 
 	field_list = line.split(",")
 
-	PayloadIndex = 2
-	HABStatii[PayloadIndex]['payload'] = field_list[0][1:]
+	Payload = field_list[0][1:]
+	PayloadIndex = FindFreePayload(Payload)
+	
+	HABStatii[PayloadIndex]['payload'] = Payload
 	if j['time'] != HABStatii[PayloadIndex]['time']:
 		HABStatii[PayloadIndex]['lastupdate'] = int(time.time())
 		Sources[2]['lastupdate'] = int(time.time())
@@ -1364,7 +1366,7 @@ def dlfldigi_thread():
 
 def Speech(Message):
 	os.system('espeak -ven+f3 -k5 -s150 "' + Message + '" &')
-		
+
 def ProcessLoRa(s):
 	QuietCount = 0
 	LineBuffer = ''
@@ -1383,7 +1385,7 @@ def ProcessLoRa(s):
 					j = json.loads(temp)
 					if j['class'] == 'POSN':
 						if j['payload'] != '':
-							global TempHABStatus, HABStatii
+							global HABStatii
 							
 							print ("LORA: " + j['payload'] +
 									", t= " + j['time'] +
@@ -1391,17 +1393,17 @@ def ProcessLoRa(s):
 									", lon=" + str(j['lon']) +
 									", alt = " + str(j['alt']))
 
-							# PayloadIndex = FindFreePayload(TempHABStatus['payload'])
-							PayloadIndex = j['index']
+							PayloadIndex = FindFreePayload(j['payload'])
+							Channel = j['channel']
 							
-							HABStatii[PayloadIndex]['payload'] = j['payload']
+							# HABStatii[PayloadIndex]['payload'] = j['payload']
 							if j['time'] != HABStatii[PayloadIndex]['time']:
 								if HABStatii[PayloadIndex]['time'] == '':
 									Speech("First telemetry from payload " + j['payload'])
 								elif int(time.time()) > (HABStatii[PayloadIndex]['lastupdate'] + 60):
 									Speech("Resumed telemetry from payload " + j['payload'])
 								HABStatii[PayloadIndex]['lastupdate'] = int(time.time())
-								Sources[PayloadIndex]['lastupdate'] = int(time.time())
+								Sources[Channel]['lastupdate'] = int(time.time())
 							HABStatii[PayloadIndex]['time'] = j['time']
 							HABStatii[PayloadIndex]['lat'] = j['lat']
 							HABStatii[PayloadIndex]['lon'] = j['lon']
@@ -1423,22 +1425,22 @@ def ProcessLoRa(s):
 def doLoRa(host, port):
 	global LoRaSocket
 	
-	#try:
-	LoRaSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM) 
+	try:
+		LoRaSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM) 
 
-	LoRaSocket.connect((host, port))    
-	
-	print("Connected to gateway")
-	Sources[0]['connected'] = 1
-	Sources[1]['connected'] = 1
-	
-	ProcessLoRa(LoRaSocket)
+		LoRaSocket.connect((host, port))    
+		
+		print("Connected to gateway")
+		Sources[0]['connected'] = 1
+		Sources[1]['connected'] = 1
+		
+		ProcessLoRa(LoRaSocket)
 
-	LoRaSocket.close()
-	# except:
-	Sources[0]['connected'] = 0
-	Sources[1]['connected'] = 0
-		# pass
+		LoRaSocket.close()
+	except:
+		Sources[0]['connected'] = 0
+		Sources[1]['connected'] = 0
+		pass
 
 def lora_thread():
 
@@ -1581,14 +1583,23 @@ def network_thread():
 		time.sleep(1)
 		
 def FindFreePayload(PayloadID):
+	# Find matching slot
 	for PayloadIndex, HABStatus in enumerate(HABStatii):
 		if HABStatus['payload'] == PayloadID:
 			return PayloadIndex
 
+	# Find free slot	
 	for PayloadIndex, HABStatus in enumerate(HABStatii):
 		if HABStatus['payload'] == "":
+			HABStatus['payload'] = PayloadID
 			return PayloadIndex
 	
+	# Find oldest slot	
+	for PayloadIndex, HABStatus in enumerate(HABStatii):
+		if HABStatus['payload'] == "":
+			HABStatus['payload'] = PayloadID
+			return PayloadIndex
+			
 	return 0
 
 def CalculateDistance(HABLatitude, HABLongitude, CarLatitude, CarLongitude):
