@@ -95,6 +95,8 @@ Navit
 
 `sudo apt-get install espeak`
 
+Run the command: `sudo reboot`
+
 `svn co svn://svn.code.sf.net/p/navit/code/trunk/navit/ navit`
 
 Steps for compile Navit application: 
