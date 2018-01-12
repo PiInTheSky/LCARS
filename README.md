@@ -5,7 +5,7 @@ The user interface is inspired by the LCARS (Library Computer Access/Retrieval S
 The screen size and layout is designed specifically for the official Raspberry Pi touchscreen display.  It doesn't resize according the monitor,
 so it will sit in the top-left corner on a large monitor, and be pretty much unusable on a smaller monitor.
 
-The program runs quite happily on Linux (Raspbian tested) or Windows (W7 tested), except for the Linux-only parts (e.g. interfacing to Navit).
+The program runs quite happily on Linux (Raspbian tested, preferably with GUI) or Windows (W7 tested), except for the Linux-only parts (e.g. interfacing to Navit).
 
 Functions
 =========
@@ -110,6 +110,26 @@ Steps for compile Navit application:
 `make -j4`
 
 If something wrong occur, delete "navit-build" directory and redo this steps using command `make -j2` instead of `make -j4`.
+
+
+(Optional) View the hub on a map 
+--------------------------------
+
+Installation for Raspbian Stretch:
+
+	wget http://steinerdatenbank.de/software/kweb-1.7.9.8.tar.gz
+	tar -xzf kweb-1.7.9.8.tar.gz
+	cd kweb-1.7.9.8
+	./debinstall
+
+
+
+Installation for Raspbian Jessie:
+
+	wget http://steinerdatenbank.de/software/kweb-1.7.9.7.tar.gz
+	tar -xzf kweb-1.7.9.7.tar.gz
+	cd kweb-1.7.9.7
+	./debinstall
 
 
 
