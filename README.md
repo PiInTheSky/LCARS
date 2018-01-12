@@ -51,7 +51,7 @@ There are many prerequisites - Python libraries and also external programs.
 Python Libs
 -----------
 
-Install some packets using this commands:
+Install some packets using this commands:  
 `sudo apt-get install python3-pyqt4`
 
 `sudo apt-get install python3-pip`
