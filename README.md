@@ -73,7 +73,15 @@ GPSD
 
 Disable getty on serial port (raspi-config)
 
-Install GPSD
+Install GPSD:
+
+	sudo apt-get install gpsd gpsd-clients python-gps
+	sudo systemctl stop gpsd.socket
+	sudo systemctl disable gpsd.socket
+	sudo systemctl enable gpsd.socket
+	sudo systemctl start gpsd.socket
+	sudo gpsd /dev/ttyAMA0 -F /var/run/gpsd.sock
+
 
 Edit "/etc/default/gpsd" file and set `DEVICES="/dev/ttyAMA0"`
 
