@@ -5,7 +5,7 @@ The user interface is inspired by the LCARS (Library Computer Access/Retrieval S
 The screen size and layout is designed specifically for the official Raspberry Pi touchscreen display.  It doesn't resize according the monitor,
 so it will sit in the top-left corner on a large monitor, and be pretty much unusable on a smaller monitor.
 
-The program runs quite happily on Linux (Raspbian tested, preferably with GUI) or Windows (W7 tested), except for the Linux-only parts (e.g. interfacing to Navit).
+The program runs quite happily on Linux (Raspbian tested) or Windows (W7 tested), except for the Linux-only parts (e.g. interfacing to Navit).
 
 Functions
 =========
@@ -44,28 +44,19 @@ Main user functions are:
 Installation
 ============
 
-Just save the repository to a suitable folder (e.g. /home/pi/LCARS) or just clone this repo on "/home/pi" directory.
+Just save the repository to a suitable folder (e.g. /home/pi/LCARS).
 
 There are many prerequisites - Python libraries and also external programs.
 
 Python Libs
 -----------
 
-Install some packets using this commands:  
-`sudo apt-get install python3-pyqt4`
-
-`sudo apt-get install python3-pip`
-
-`sudo pip3 install pyserial`
-
-If you want to use Google Maps, you need install "kweb". 
-
+[to do]
 
 Linux Utilities
 ---------------
 
-Run this command:
-`sudo apt-get install wmctrl screen gnuplot xterm`
+sudo apt-get install wmctrl, screen, gnuplot, xterm
 
 
 GPSD
@@ -73,78 +64,43 @@ GPSD
 
 Disable getty on serial port (raspi-config)
 
-Install GPSD:
+Install GPSD
 
-	sudo apt-get install gpsd gpsd-clients python-gps
-	sudo systemctl stop gpsd.socket
-	sudo systemctl disable gpsd.socket
-	sudo systemctl enable gpsd.socket
-	sudo systemctl start gpsd.socket
-	sudo gpsd /dev/ttyAMA0 -F /var/run/gpsd.sock
-
-
-Edit "/etc/default/gpsd" file and set `DEVICES="/dev/ttyAMA0"`
+Edit /etc/default/gpsd and set DEVICES="/dev/ttyAMA0"
 
 
 Navit
 -----
 
-`sudo apt-get install subversion imagemagick libdbus-1-dev libdbus-glib-1-dev libfontconfig1-dev libfreetype6-dev libfribidi-dev libimlib2-dev librsvg2-bin libspeechd-dev libxml2-dev ttf-liberation libgtk2.0-dev`
+sudo apt-get install subversion imagemagick libdbus-1-dev libdbus-glib-1-dev libfontconfig1-dev libfreetype6-dev libfribidi-dev libimlib2-dev librsvg2-bin libspeechd-dev libxml2-dev ttf-liberation libgtk2.0-dev
 
-`sudo apt-get install gcc g++ cmake make zlib1g-dev libpng12-dev librsvg2-bin`
+sudo apt-get install gcc g++ cmake make zlib1g-dev libpng12-dev librsvg2-bin
 
-`sudo apt-get install libsdl-image1.2-dev libdevil-dev libglc-dev freeglut3-dev libxmu-dev libfribidi-dev`
+sudo apt-get install libsdl-image1.2-dev libdevil-dev libglc-dev freeglut3-dev libxmu-dev libfribidi-dev
 
-`sudo apt-get install libglc-dev freeglut3-dev libgl1-mesa-dev libfreeimage-dev`
+sudo apt-get install libglc-dev freeglut3-dev libgl1-mesa-dev libfreeimage-dev
 
-`sudo apt-get install libqt4-dev`
+sudo apt-get install libqt4-dev
 
-`sudo apt-get install libgps-dev`
+sudo apt-get install libgps-dev
 
-`sudo apt-get install espeak`
+sudo apt-get install espeak
 
-Run the command: `sudo reboot`
+svn co svn://svn.code.sf.net/p/navit/code/trunk/navit/ navit
 
-`svn co svn://svn.code.sf.net/p/navit/code/trunk/navit/ navit`
+mkdir navit-build
+cd navit-build
 
-Steps for compile Navit application: 
+cmake ~/navit -DFREETYPE_INCLUDE_DIRS=/usr/include/freetype2/
 
-`mkdir navit-build`
-
-`cd navit-build`
-
-`cmake ~/navit -DFREETYPE_INCLUDE_DIRS=/usr/include/freetype2/`
-
-`make -j4`
-
-If something wrong occur, delete "navit-build" directory and redo this steps using command `make -j2` instead of `make -j4`.
-
-
-(Optional) View the hub on a map 
---------------------------------
-
-Installation for Raspbian Stretch:
-
-	wget http://steinerdatenbank.de/software/kweb-1.7.9.8.tar.gz
-	tar -xzf kweb-1.7.9.8.tar.gz
-	cd kweb-1.7.9.8
-	./debinstall
-
-
-
-Installation for Raspbian Jessie:
-
-	wget http://steinerdatenbank.de/software/kweb-1.7.9.7.tar.gz
-	tar -xzf kweb-1.7.9.7.tar.gz
-	cd kweb-1.7.9.7
-	./debinstall
-
+make -j4
+	
 
 
 Configuration
 =============
 
-The configuration is in the file "lcars.txt", or use the Settings button.
+The configuration is in the file lcars.txt, or use the Settings button.
 
 
 Use
