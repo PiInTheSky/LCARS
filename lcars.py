@@ -1222,7 +1222,7 @@ def GetSSDVFileName():
 
 	# Get list of jpg files
 	date_file_list = []
-	for file in glob.glob(Settings['SSDVPath'] + '/*.JPG'):
+	for file in glob.glob(Settings['SSDV.Path'] + '/*.JPG'):
 		stats = os.stat(file)
 		lastmod_date = time.localtime(stats[8])
 		date_file_tuple = lastmod_date, file
