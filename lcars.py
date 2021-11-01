@@ -1459,7 +1459,7 @@ def car_thread():
 	while 1:
 		if Settings['Chase.Enabled'] and (len(OurStatus['time']) > 0):
 			print("UPLOAD CAR")
-			url = 'http://spacenear.us/tracker/track.php'
+			url = 'http://legacy-snus.habhub.org/tracker/track.php'
 			values = {'vehicle' : Settings['Chase.ID'],
 					 'time'  : ConvertTimeForHabitat(OurStatus['time']),
 					 'lat'  : OurStatus['lat'],
